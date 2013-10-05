@@ -20,7 +20,7 @@ app.set('view engine', 'ejs');
 app.use(flash());
 app.use(express.favicon());
 app.use(express.logger('dev'));
-app.use(express.bodyParser());
+app.use(express.bodyParser({ keepExtensions: true, uploadDir: './public/file'}));
 app.use(express.methodOverride());
 app.use(express.cookieParser());
 app.use(express.session({
