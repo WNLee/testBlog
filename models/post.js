@@ -54,7 +54,7 @@ Post.prototype.save = function(callback) {
   });
 };
 //读取文章及其相关信息
-Post.get = function(name, callback) {
+Post.getAll = function(name, callback) {
   // 打开数据库
   mongodb.open(function (err, db) {
     if (err) {
@@ -68,11 +68,11 @@ Post.get = function(name, callback) {
        }
        var query = {};
        if (name) {
-          query.name = namel
+          query.name = name;
        }
        //根据 query 对象查询文章
        collection.find(query).sort({
-         time: -1
+         time: -1 // 最后发表的一片博客
        }).toArray(function (err, docs) {
          mongodb.close();
          if (err) {
@@ -86,3 +86,32 @@ Post.get = function(name, callback) {
     });
   });
 };
+// 获取一篇文章
+Post.getOne = function(name, day, title, callback) {
+  mongodb.open(function (err, db) {
+    // 打开数据库
+    if (err) {
+       return callback(err);
+    }
+    // 读取 posts 集合
+    db.collection('posts', function(err, collection) {
+       if (err) {
+          mongodb.close();
+          return callback(err);
+       }
+       // 根据用户名、发表日期及文章名进行查询
+       collection.findOne({
+         "name": name,
+         "time.day": day,
+         "title": title,
+       }, function (err, doc) {
+         mongodb.close();
+         if (err) {
+            return callback(err);
+         }
+         doc.post = markdown.toHTML(doc.post);
+         callback(null, doc);// 返回查询的一篇文章
+       });
+    });
+  });
+}
