@@ -150,7 +150,11 @@ module.exports = function(app) {
     });
   });
   app.get('/u/:name/:day/:title', function(req, res) {
-    Post.getOne(req.params.name, req.params.day, req.params.title, function (err, post) {
+    Post.getOne(req.params.name, req.params.day, req.params.title, function (err, post) { 
+      if (!post) {
+         req.flash('error', '文章不存在！');
+         return res.redirect('/');
+      }
       if (err) {
          req.flash('error', err); 
          return res.redirect('/');
@@ -162,6 +166,48 @@ module.exports = function(app) {
          success: req.flash('success').toString(),
          error: req.flash('error').toString()
       });
+    });
+  });
+  app.get('/edit/:name/:day/:title', checkLogin);
+  app.get('/edit/:name/:day/:title', function (req, res) {
+    var currentUser = req.session.user;
+    Post.edit(currentUser.name, req.params.day, req.params.title, function (err, post) {
+      if (err || !post) {
+         req.flash('error', err);
+         res.redirect('back');
+      }
+      res.render('edit', {
+         title: '编辑',
+         post: post,
+         user: req.session.user,
+         success: req.flash('success').toString(),
+         error: req.flash('error').toString()
+      });
+    });
+  });
+  app.post('/edit/:name/:day/:title', checkLogin);
+  app.post('/edit/:name/:day/:title', function (req, res) {
+    var currentUser = req.session.user;
+    Post.update(currentUser.name, req.params.day, req.params.title, req.body.post, function (err, post) {
+      var url = '/u/' + req.params.name + '/' + req.params.day + '/' + req.params.title;
+      if (err) {
+         req.flash('error', err);
+         return res.redirect(url); // 出错！返回文章页
+      }
+      req.flash('success', '修改成功！');
+      res.redirect(url);// 成功！返回文章页
+    });
+  });
+  app.get('/remove/:name/:day/:title', checkLogin);
+  app.get('/remove/:name/:day/:title', function (req, res) {
+    var currentUser = req.session.user;
+    Post.remove(currentUser.name, req.params.day, req.params.title, function (err) {
+      if (err) {
+         req.flash('error', err); 
+         return res.redirect('back');
+      }
+      req.flash('success', '删除成功!');
+      res.redirect('/');
     });
   });
   app.get('/post', checkLogin);
@@ -189,7 +235,7 @@ module.exports = function(app) {
   app.get('/logout', checkLogin);
   app.get('/logout', function (req, res) {
     req.session.user = null;
-    req.flash('success', '登录成功！');
+    req.flash('success', '登出成功！');
     res.redirect('/');//登出后跳转到主页
   });
   function checkLogin(req, res, next) {
